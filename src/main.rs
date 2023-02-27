@@ -1,7 +1,7 @@
 #![allow(unused)] // get rid of this later
 
 use druid::text::{ParseFormatter, Formatter};
-use druid::widget::{Container, Button, Flex, TextBox, ValueTextBox};
+use druid::widget::{Container, Button, Flex, TextBox, ValueTextBox, Slider, Controller};
 use druid::{
     widget::{Label, Split},
     AppLauncher, Widget, WindowDesc,
@@ -27,13 +27,20 @@ impl Graphs {
     fn get_y(&self, x: f32) -> f32 {
         match self {
             Graphs::Basic => x,
-            Graphs::BasicExponential => todo!(),
+            Graphs::BasicExponential => x.powi(2),
         }
     }
 
-    fn get_points(&self) -> impl Iterator<Item = (f32, f32)> {
+    fn get_points(&self) -> Vec<(f32, f32)> {
         match self {
-            Graphs::Basic => (0..=10).map(|x| x as f32).map(|x| (x, x)),
+            Graphs::Basic => (0..=10).map(|x| x as f32).map(|x| (x, x)).collect(),
+            Graphs::BasicExponential => (0..=10).map(|x| x as f32).map(|x| (x, x.powi(2))).collect(),
+        }
+    }
+
+    fn get_area(&self) -> f32 {
+        match self {
+            Graphs::Basic => 10f32.powi(2)/2f32,
             Graphs::BasicExponential => todo!(),
         }
     }
@@ -43,47 +50,51 @@ impl Graphs {
 struct State {
     graph: Graphs,
     num_rect: i32,
-    xistar: f32,
+    xistar: f64,
     area: f32,
     text: String
 }
 
 impl State {
-    fn calculate_area(&mut self) {
-        // hardcoding y=x on [0, 10] here
-        if self.num_rect == 0 {
-            self.area = 0.0;
-            return
-        }
-
+    fn calculate_area(&self) -> f32{
         let domain = (0f32, 10f32);
         let delta_x = (domain.1 - domain.0) / self.num_rect as f32;
-        let area = 0f32;
+        let mut area = 0f32;
 
         for i in 0..self.num_rect {
-            let xistar = i as f32 * delta_x + self.xistar * delta_x;
-            self.area = xistar * delta_x;  // replace xistar with f(xistar)
+            let xistar = i as f32 * delta_x + self.xistar as f32 * delta_x;
+            area += self.graph.get_y(xistar) * delta_x;
+        }
+
+        if self.num_rect == 0 {
+            0.0
+        } else {
+            area
         }
     }
 }
 
 fn build_options() -> impl Widget<State> {
-    let num_rect = Flex::row()
+    let options_num_rect = Flex::row()
         .with_child(Button::new("Add Rectangle").on_click(|ctx, data: &mut State, _env| {
             data.num_rect += 1;
-            data.calculate_area()
         }))
         .with_child(Button::new("Sub Rectangle").on_click(|ctx, data: &mut State, _env| {
             if data.num_rect > 0 {
                 data.num_rect -= 1;
             }
-            data.calculate_area()
         }));
+
+    let options_xistar = Flex::row()
+        .with_child(Label::new("xistar: "))
+        .with_child(Slider::new().lens(State::xistar));
 
     Flex::column()
         .with_spacer(0.50)
-        .with_child(Label::dynamic(|data: &State, _env| format!("area of rectangles = {}", data.area)))
-        .with_child(num_rect)
+        .with_child(Label::dynamic(|data: &State, _env| format!("True area under graph: {}", data.graph.get_area())))
+        .with_child(Label::dynamic(|data: &State, _env| format!("area of rectangles = {}", data.calculate_area())))
+        .with_child(options_num_rect)
+        .with_child(options_xistar)
 }
 
 fn build_plot() -> impl Widget<State> {
@@ -92,7 +103,6 @@ fn build_plot() -> impl Widget<State> {
 
         // create chart + options
         let mut chart = ChartBuilder::on(&root)
-            // .caption("thing", ("sans-serif", 50).into_font())
             .margin(10)
             .x_label_area_size(25)
             .y_label_area_size(25)
@@ -108,7 +118,6 @@ fn build_plot() -> impl Widget<State> {
             .unwrap();
 
         // draw graph
-        // let line_points = (0..=10).map(|x| x as f32).map(|x| (x, x));
         let line_points = data.graph.get_points();
         chart
             .draw_series(LineSeries::new(line_points, &WHITE))
@@ -116,10 +125,12 @@ fn build_plot() -> impl Widget<State> {
 
         // draw rectangles
         let area = chart.plotting_area();
-
+        
         for a in linspace(0.0, 10.0, data.num_rect + 1).windows(2) {
+            // a[0] = left endpoint
+            // a[1] = right endpoint
             area.draw(&Rectangle::new(
-                [(a[0], data.xistar * a[1]), (a[1], 0.0)], // the a[1] in the first tuple is xistar
+                [(a[0], a[0] + data.xistar as f32 * data.graph.get_y(a[1]-a[0])), (a[1], 0.0)],
                 ShapeStyle {
                     color: RED.into(),
                     filled: false,
@@ -133,7 +144,6 @@ fn build_plot() -> impl Widget<State> {
 
 fn build_root() -> impl Widget<State> {
     Split::columns(
-        // Button::new("More Rectangles!").on_click(|_ctx, data: &mut State, _env| data.num_rect += 1),
         build_options(),
         build_plot(),
     )
