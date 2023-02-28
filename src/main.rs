@@ -60,13 +60,14 @@ fn build_options() -> impl Widget<State> {
         .with_child(Slider::new().lens(State::xistar));
 
     Flex::column()
-        .with_spacer(0.50)
+        .with_spacer(1f64)
         .with_child(Label::dynamic(|data: &State, _| {
             format!("Area under graph: {}", data.graph.get_area())
         }))
         .with_child(Label::dynamic(|data: &State, _| {
             format!("Area of rectangles = {}", data.calculate_area())
         }))
+        .with_child(Label::dynamic(|data: &State, _| format!("# of rectangles: {}", data.num_rect)))
         .with_child(options_num_rect)
         .with_child(options_xistar)
 }

@@ -26,7 +26,7 @@ impl Graphs {
     pub fn get_area(&self) -> f32 {
         match self {
             Graphs::Basic => 10f32.powi(2) / 2f32,
-            Graphs::BasicExponential => todo!(),
+            Graphs::BasicExponential => 10f32.powi(3) / 3f32,
         }
     }
 }
