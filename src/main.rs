@@ -83,9 +83,9 @@ fn build_plot() -> impl Widget<State> {
         // create chart + options
         let mut chart = ChartBuilder::on(&root)
             .margin(10)
-            .x_label_area_size(25)
-            .y_label_area_size(25)
-            .build_cartesian_2d(0f32..10.0, 0f32..10.0)
+            .x_label_area_size(30)
+            .y_label_area_size(30)
+            .build_cartesian_2d(0f32..10.0, data.graph.get_range())
             .unwrap();
 
         // draw grid + axis
@@ -105,15 +105,15 @@ fn build_plot() -> impl Widget<State> {
 
         // draw rectangles
         let area = chart.plotting_area();
-
+        
         for a in linspace(0.0, 10.0, data.num_rect + 1).windows(2) {
-            // a[0] = left endpoint
-            // a[1] = right endpoint
+            let left = data.graph.get_y(a[0]);
+            let right = data.graph.get_y(a[1]);
             area.draw(&Rectangle::new(
                 [
                     (
                         a[0],
-                        a[0] + data.xistar as f32 * data.graph.get_y(a[1] - a[0]),
+                        a[0] + data.xistar as f32 * data.graph.get_y(right - left), // something wrong here with the exponential one
                     ),
                     (a[1], 0.0),
                 ],

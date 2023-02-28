@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use druid::Data;
 
 #[derive(Debug, Clone, Data, PartialEq)]
@@ -18,8 +20,20 @@ impl Graphs {
         match self {
             Graphs::Basic => (0..=10).map(|x| x as f32).map(|x| (x, x)).collect(),
             Graphs::BasicExponential => {
-                (0..=10).map(|x| x as f32).map(|x| (x, x.powi(2))).collect()
+                // x^2 = 10
+                // x = sqrt(10)
+                // let mut a = (0..=100).map(|x| (x as f32)/10f32).map(|x| (x, x.powi(2))).filter(|x| x.1 < 10f32).collect::<Vec<_>>();
+                // a.push((10f32.sqrt(), 10f32));
+                // a
+                (0..=100).map(|x| (x as f32)/10f32).map(|x| (x, x.powi(2))).collect()
             }
+        }
+    }
+
+    pub fn get_range(&self) -> Range<f32> {
+        match self {
+            Graphs::Basic => 0f32..10f32,
+            Graphs::BasicExponential => 0f32..100f32,
         }
     }
 
