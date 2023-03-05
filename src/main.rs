@@ -1,20 +1,17 @@
-use druid::widget::{Button, Flex, Slider, TextBox};
+use druid::widget::{Flex, TextBox, SvgData, Svg, Slider};
 use druid::{
     widget::{Label, Split},
     AppLauncher, Widget, WindowDesc,
 };
 use druid::{Data, Lens, WidgetExt};
-use graph::{linspace, Graph};
-use plotters::prelude::{ChartBuilder, Rectangle};
+use graph::Graph;
+use plotters::prelude::ChartBuilder;
 use plotters::series::LineSeries;
-use plotters::style::{FontDesc, IntoTextStyle, RGBColor, ShapeStyle, RED, WHITE};
+use plotters::style::{FontDesc, IntoTextStyle, RGBColor, WHITE};
 use plotters_druid::Plot;
-use shunting::ShuntingError;
 
 mod graph;
 mod shunting;
-
-// check out field in druid lens
 
 #[derive(Debug, Clone, Data, Lens)]
 struct State {
@@ -22,57 +19,22 @@ struct State {
     num_rect: i32,
     xistar: f64,
     area: f32,
-    text: String,
-}
-
-impl State {
-    fn calculate_rect_area(&self) -> Result<f32, ShuntingError> {
-        if self.num_rect == 0 {return Ok(0.0)}
-
-        let domain = (0f32, 10f32);
-        let delta_x = (domain.1 - domain.0) / self.num_rect as f32;
-        let mut area = 0f32;
-
-        for i in 0..self.num_rect {
-            let xistar = i as f32 * delta_x + self.xistar as f32 * delta_x;
-            area += self.graph.f(xistar)? * delta_x;
-        }
-
-        Ok(area)
-    }
 }
 
 fn build_options() -> impl Widget<State> {
-    let options_graph = Flex::row()
+    let eq_option = Flex::row()
         .with_child(Label::new("Graph Eq:"))
         .with_child(TextBox::new().lens(Graph::func_string).lens(State::graph));
 
-    let options_num_rect = Flex::row()
-        .with_child(
-            Button::new("Add Rectangle").on_click(|_, data: &mut State, _| {
-                data.num_rect += 1;
-            }),
-        )
-        .with_child(
-            Button::new("Sub Rectangle").on_click(|_, data: &mut State, _| {
-                if data.num_rect > 0 {
-                    data.num_rect -= 1;
-                }
-            }),
-        );
+    let xistar_asset = include_str!("assets/xistar.svg").parse::<SvgData>().unwrap();
 
-    let options_xistar = Flex::row()
-        .with_child(Label::new("xistar: "))
+    let xi_option = Flex::row()
+        .with_child(Svg::new(xistar_asset))
         .with_child(Slider::new().lens(State::xistar));
 
     Flex::column()
-        .with_child(options_graph)
-        // .with_child(Label::dynamic(|data: &State, _| {
-            // format!("Area of rectangles = {}", data.calculate_rect_area().unwrap_or(0.0))
-        // }))
-        // .with_child(Label::dynamic(|data: &State, _| format!("# of rectangles: {}", data.num_rect)))
-        // .with_child(options_num_rect)
-        // .with_child(options_xistar)
+        .with_child(eq_option)
+        .with_child(xi_option)
 }
 
 fn build_plot() -> impl Widget<State> {
@@ -82,8 +44,6 @@ fn build_plot() -> impl Widget<State> {
             16.,
             plotters::style::FontStyle::Normal,
         );
-
-
 
         // create chart + options
         let x_spec = data.graph.domain.0..data.graph.domain.1;
@@ -111,35 +71,6 @@ fn build_plot() -> impl Widget<State> {
                 .draw_series(LineSeries::new(points, &WHITE))
                 .unwrap();
         }
-
-        // draw rectangles
-        // export this to a closure
-
-        let area = chart.plotting_area();
-        
-        let draw_rect = |left: f32, right: f32| {
-
-        };
-
-        // for a in linspace(0.0, 10.0, data.num_rect + 1).windows(2) {
-        //     let left = data.graph.get_y(a[0]);
-        //     let right = data.graph.get_y(a[1]);
-        //     area.draw(&Rectangle::new(
-        //         [
-        //             (
-        //                 a[0],
-        //                 a[0] + data.xistar as f32 * data.graph.f(right - left), // something wrong here with the exponential one
-        //             ),
-        //             (a[1], 0.0),
-        //         ],
-        //         ShapeStyle {
-        //             color: RED.into(),
-        //             filled: false,
-        //             stroke_width: 1,
-        //         },
-        //     ))
-        //     .unwrap();
-        // }
     })
 }
 
@@ -156,13 +87,12 @@ fn main() {
         graph: Graph{
             func_string: "x^2".to_string(),
             number_points: 1000,
-            domain: (0.0, 10.0),
-            range: (0.0, 10.0),
+            domain: (-10.0, 10.0),
+            range: (-10.0, 10.0),
         },
         num_rect: 0,
         xistar: 1.0,
         area: 0.0,
-        text: "".to_string(),
     };
 
     AppLauncher::with_window(window)
