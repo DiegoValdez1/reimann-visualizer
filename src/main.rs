@@ -4,7 +4,8 @@ use druid::{
     AppLauncher, Widget, WindowDesc,
 };
 use druid::{Data, Lens, WidgetExt};
-use graph::{linspace, Graphs};
+use druid_widget_nursery::DropdownSelect;
+use graph::{linspace, Graph, Gtype};
 use plotters::prelude::{ChartBuilder, Rectangle};
 use plotters::series::LineSeries;
 use plotters::style::{FontDesc, IntoTextStyle, RGBColor, ShapeStyle, RED, WHITE};
@@ -14,11 +15,9 @@ mod graph;
 
 #[derive(Debug, Clone, Data, Lens)]
 struct State {
-    graph: Graphs,
+    graph: Graph,
     num_rect: i32,
-    xistar: f64,
-    area: f32,
-    text: String,
+    xistar: f64
 }
 
 impl State {
@@ -29,7 +28,7 @@ impl State {
 
         for i in 0..self.num_rect {
             let xistar = i as f32 * delta_x + self.xistar as f32 * delta_x;
-            area += self.graph.get_y(xistar) * delta_x;
+            area += self.graph.gtype.f(xistar) * delta_x;
         }
 
         if self.num_rect == 0 {
@@ -41,6 +40,10 @@ impl State {
 }
 
 fn build_options() -> impl Widget<State> {
+    let options_graph = Flex::row()
+        .with_child(Label::new("Graph EQ: "))
+        .with_child(DropdownSelect::new(vec![("y = x", Gtype::Basic), ("y = x^2", Gtype::Exponential)]).lens(Graph::gtype).lens(State::graph));
+
     let options_num_rect = Flex::row()
         .with_child(
             Button::new("Add Rectangle").on_click(|_, data: &mut State, _| {
@@ -61,9 +64,9 @@ fn build_options() -> impl Widget<State> {
         .with_child(Slider::new().lens(State::xistar));
 
     Flex::column()
-        .with_spacer(1f64)
+        .with_child(options_graph)
         .with_child(Label::dynamic(|data: &State, _| {
-            format!("Area under graph: {}", data.graph.get_area())
+            format!("Area under graph: {}", data.graph.gtype.area(data.graph.domain))
         }))
         .with_child(Label::dynamic(|data: &State, _| {
             format!("Area of rectangles = {}", data.calculate_area())
@@ -86,7 +89,7 @@ fn build_plot() -> impl Widget<State> {
             .margin(10)
             .x_label_area_size(30)
             .y_label_area_size(30)
-            .build_cartesian_2d(0f32..10.0, data.graph.get_range())
+            .build_cartesian_2d(data.graph.domain.0..data.graph.domain.1, data.graph.range.0..data.graph.range.1)
             .unwrap();
 
         // draw grid + axis
@@ -99,7 +102,7 @@ fn build_plot() -> impl Widget<State> {
             .unwrap();
 
         // draw graph
-        let line_points = data.graph.get_points();
+        let line_points = data.graph.series(100);
         chart
             .draw_series(LineSeries::new(line_points, &WHITE))
             .unwrap();
@@ -108,13 +111,13 @@ fn build_plot() -> impl Widget<State> {
         let area = chart.plotting_area();
         
         for a in linspace(0.0, 10.0, data.num_rect + 1).windows(2) {
-            let left = data.graph.get_y(a[0]);
-            let right = data.graph.get_y(a[1]);
+            let left = data.graph.gtype.f(a[0]);
+            let right = data.graph.gtype.f(a[1]);
             area.draw(&Rectangle::new(
                 [
                     (
                         a[0],
-                        a[0] + data.xistar as f32 * data.graph.get_y(right - left), // something wrong here with the exponential one
+                        a[0] + data.xistar as f32 * data.graph.gtype.f(right - left), // something wrong here with the exponential one
                     ),
                     (a[1], 0.0),
                 ],
@@ -139,11 +142,13 @@ fn main() {
         .title("Reimann Visualizer");
 
     let initial_data = State {
-        graph: Graphs::Basic,
+        graph: Graph {
+            gtype: Gtype::Exponential,
+            domain: (0.0, 10.0),
+            range: (0.0, 10.0)
+        },
         num_rect: 0,
-        xistar: 1.0,
-        area: 0.0,
-        text: "".to_string(),
+        xistar: 1.0
     };
 
     AppLauncher::with_window(window)
