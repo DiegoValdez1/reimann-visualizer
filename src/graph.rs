@@ -11,7 +11,7 @@ pub struct Graph {
     pub func_string: String,
     pub number_points: i32,
     pub domain: (f32, f32),
-    pub range: (f32, f32)
+    // pub range: (f32, f32)
 }
 
 impl Graph {
@@ -24,8 +24,17 @@ impl Graph {
         let mut points: Vec<(f32, f32)> = Vec::new();
 
         for x in xpoints {
-            points.push((x, self.f(x)?));
+            points.push((x, self.f(x)?))
         }
+
+        // for x in xpoints {
+        //     let p = (x, self.f(x)?);
+        //     if p.1 > self.range.1 || p.1 < self.range.0 {
+        //         break
+        //     } else {
+        //         points.push(p)
+        //     }
+        // }
 
         Ok(points)
     }

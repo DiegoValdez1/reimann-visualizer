@@ -4,10 +4,10 @@ use druid::{
     AppLauncher, Widget, WindowDesc,
 };
 use druid::{Data, Lens, WidgetExt};
-use graph::Graph;
-use plotters::prelude::ChartBuilder;
+use graph::{Graph, linspace};
+use plotters::prelude::{ChartBuilder, Rectangle};
 use plotters::series::LineSeries;
-use plotters::style::{FontDesc, IntoTextStyle, RGBColor, WHITE};
+use plotters::style::{FontDesc, IntoTextStyle, RGBColor, WHITE, ShapeStyle, RED};
 use plotters_druid::Plot;
 
 mod graph;
@@ -39,15 +39,26 @@ fn build_options() -> impl Widget<State> {
 
 fn build_plot() -> impl Widget<State> {
     Plot::new(|(_w, _h), data: &State, root| {
+
+        let points = match data.graph.get_series() {
+            Ok(x) => x,
+            Err(_) => return
+        };
+
+        let mut y_sorted = points.iter().cloned().map(|x| x.1).collect::<Vec<_>>();
+        y_sorted.sort_by(|a, b| a.total_cmp(b));
+
         let font = FontDesc::new(
             plotters::style::FontFamily::SansSerif,
-            16.,
+            15.,
             plotters::style::FontStyle::Normal,
         );
 
         // create chart + options
+
         let x_spec = data.graph.domain.0..data.graph.domain.1;
-        let y_spec = data.graph.range.0..data.graph.range.1;
+        // let y_spec = data.graph.range.0..data.graph.range.1;
+        let y_spec = y_sorted.first().unwrap_or(&0.0).to_owned()..y_sorted.last().unwrap_or(&10.0).to_owned();
         let mut chart = ChartBuilder::on(&root)
             .margin(10)
             .x_label_area_size(30)
@@ -65,12 +76,32 @@ fn build_plot() -> impl Widget<State> {
             .unwrap();
 
         // draw graph
-        let points_res = data.graph.get_series();
-        if let Ok(points) = points_res {
-            chart
-                .draw_series(LineSeries::new(points, &WHITE))
-                .unwrap();
-        }
+        chart
+            .draw_series(LineSeries::new(points, &WHITE))
+            .unwrap();
+        // if let Ok(points) = points_res {
+        //     chart
+        //         .draw_series(LineSeries::new(points, &WHITE))
+        //         .unwrap();
+        // }
+
+        // draw rectangles
+        // let area = chart.plotting_area();
+
+        // for a in linspace(data.graph.domain.0, data.graph.domain.1, data.num_rect + 1).windows(2) {
+        //     let l = match data.graph.f(a[0]) {Ok(x) => x, _ => break};
+        //     let r = match data.graph.f(a[1]) {Ok(x) => x, _ => break};
+        //     let top_right = match data.graph.f(a[0] + data.xistar as f32 * (r - l)) {Ok(x) => x, _ => break};
+
+        //     area.draw(&Rectangle::new([
+        //         (a[0], top_right),
+        //         (a[1], 0.0)
+        //     ], ShapeStyle {
+        //         color: RED.into(),
+        //         filled: false,
+        //         stroke_width: 1,
+        //     })).unwrap();
+        // }
     })
 }
 
@@ -86,11 +117,11 @@ fn main() {
     let initial_data = State {
         graph: Graph{
             func_string: "x^2".to_string(),
-            number_points: 1000,
-            domain: (-10.0, 10.0),
-            range: (-10.0, 10.0),
+            number_points: 100,
+            domain: (0.0, 10.0),
+            // range: (0.0, 10.0),
         },
-        num_rect: 0,
+        num_rect: 4,
         xistar: 1.0,
         area: 0.0,
     };
