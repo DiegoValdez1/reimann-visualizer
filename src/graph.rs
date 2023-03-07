@@ -39,8 +39,9 @@ pub struct Graph {
 }
 
 impl Graph {
-    pub fn series(&self, num_points: i32) -> Vec<(f32, f32)> {
-        let xpoints = linspace(self.domain.0, self.domain.1, num_points);
+    pub fn series(&self) -> Vec<(f32, f32)> {
+        // 1000 points pre-baked in here
+        let xpoints = linspace(self.domain.0, self.domain.1, 1000);
         xpoints
             .into_iter()
             .map(|x| (x, self.gtype.f(x)))

@@ -22,20 +22,23 @@ struct State {
 
 impl State {
     fn calculate_area(&self) -> f32 {
-        let domain = (0f32, 10f32);
-        let delta_x = (domain.1 - domain.0) / self.num_rect as f32;
-        let mut area = 0f32;
+        // THIS IS WRONG SO WRONG BUT ITS GOOD ENOUGH FOR PROJECT
 
-        for i in 0..self.num_rect {
-            let xistar = i as f32 * delta_x + self.xistar as f32 * delta_x;
-            area += self.graph.gtype.f(xistar) * delta_x;
+        // there has to be some better way to do this.
+        // TODO: make this not shit
+
+        let mut area = 0.0;
+        let points = self.graph.series();
+        for partition in linspace(points.first().unwrap().0, points.last().unwrap().0, self.num_rect + 1).windows(2) {
+            let eq = &self.graph.gtype;
+            let l = partition[0];
+            let r = partition[1];
+            let height = eq.f(l + self.xistar as f32 * (r - l));
+            area += height * (r - l);
+
         }
 
-        if self.num_rect == 0 {
-            0.0
-        } else {
-            area
-        }
+        area
     }
 }
 
@@ -102,32 +105,29 @@ fn build_plot() -> impl Widget<State> {
             .unwrap();
 
         // draw graph
-        let line_points = data.graph.series(100);
+        let points = data.graph.series();
         chart
-            .draw_series(LineSeries::new(line_points, &WHITE))
+            .draw_series(LineSeries::new(points.clone(), &WHITE))
             .unwrap();
 
         // draw rectangles
         let area = chart.plotting_area();
-        
-        for a in linspace(0.0, 10.0, data.num_rect + 1).windows(2) {
-            let left = data.graph.gtype.f(a[0]);
-            let right = data.graph.gtype.f(a[1]);
-            area.draw(&Rectangle::new(
-                [
-                    (
-                        a[0],
-                        a[0] + data.xistar as f32 * data.graph.gtype.f(right - left), // something wrong here with the exponential one
-                    ),
-                    (a[1], 0.0),
-                ],
-                ShapeStyle {
+    
+        for partition in linspace(points.first().unwrap().0, points.last().unwrap().0, data.num_rect + 1).windows(2) {
+            let eq = &data.graph.gtype;
+            let l = partition[0];
+            let r = partition[1];
+
+            let height = eq.f(l + data.xistar as f32 * (r - l));
+
+            area.draw(&Rectangle::new([
+                (l, height),
+                (r, 0.0)  // 0.0 here is the x axis
+            ], ShapeStyle {
                     color: RED.into(),
                     filled: false,
                     stroke_width: 1,
-                },
-            ))
-            .unwrap();
+            })).unwrap();
         }
     })
 }
@@ -144,8 +144,8 @@ fn main() {
     let initial_data = State {
         graph: Graph {
             gtype: Gtype::Exponential,
-            domain: (0.0, 10.0),
-            range: (0.0, 10.0)
+            domain: (-10.0, 10.0),
+            range: (-10.0, 10.0)
         },
         num_rect: 0,
         xistar: 1.0

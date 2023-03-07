@@ -1,7 +1,7 @@
 # Reimann Visualizer
-This will soon™ become a gui tool to help visualize reimann sums and how different parts of the equation affect the overall result.
+This is a GUI tool to visualize reimann sums and how the different parts of their composition can affect the final area in the rectangles.
 
-Made as a project for Calculus 2 class.
+I truly do not recommend using this for anything serious because of the sheer amount of bugs and bad code in here. I'm only finalizing it right now because this is made for a calculus 2 class extra-credit assignment and they aren't a stickler on the bugs.
 
 ## Building
 You can build this project by installing rustup from https://www.rust-lang.org, and running any of the following:
