@@ -1,4 +1,4 @@
-use druid::widget::{Button, Flex, Slider};
+use druid::widget::{Button, Flex, Slider, SvgData, Svg};
 use druid::{
     widget::{Label, Split},
     AppLauncher, Widget, WindowDesc,
@@ -55,8 +55,9 @@ fn build_options() -> impl Widget<State> {
             }),
         );
 
+    let asset_xistar = include_str!("assets/xistar.svg").parse::<SvgData>().expect("Could not find 'xistar.svg' asset file.");
     let options_xistar = Flex::row()
-        .with_child(Label::new("xistar: "))
+        .with_child(Svg::new(asset_xistar))
         .with_child(Slider::new().lens(State::xistar));
 
     Flex::column()
