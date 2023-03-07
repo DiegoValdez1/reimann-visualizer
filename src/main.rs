@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 use druid::widget::{Button, Flex, Slider, SvgData, Svg};
 use druid::{
     widget::{Label, Split},
