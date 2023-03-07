@@ -145,9 +145,9 @@ fn main() {
 
     let initial_data = State {
         graph: Graph {
-            gtype: Gtype::Exponential,
-            domain: (-10.0, 10.0),
-            range: (-10.0, 10.0)
+            gtype: Gtype::Basic,
+            domain: (0.0, 10.0),
+            range: (0.0, 10.0)
         },
         num_rect: 0,
         xistar: 1.0
